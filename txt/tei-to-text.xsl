@@ -125,7 +125,7 @@ of this software, even if advised of the possibility of such damage.
       </desc>
    </doc>
 
-   <xsl:output method="text"/>
+   <xsl:output encoding="utf-8" method="text"/>
    <xsl:param name="makeCSV">false</xsl:param>
    <xsl:param name="oneword">false</xsl:param>
    <xsl:variable name="q">"</xsl:variable>
@@ -151,7 +151,16 @@ of this software, even if advised of the possibility of such damage.
 
    <xsl:template match="facsimile"/>
 
-   <!-- for when we need some context -->
+  <!-- handle text nodes and perform any necessary character
+       conversion -->
+
+<!-- also use this chance to break text into words and put them one
+per line, if requested by "oneword" parameter -->
+
+<!-- if makeCSV is requested, each word is in a line of a CSV file
+     by itself followed by its position within the hierachy of the XML
+     document
+-->
   <xsl:function name="tei:escapeChars" as="xs:string">
     <xsl:param name="letters"/>
     <xsl:param name="context"/>
@@ -188,7 +197,7 @@ of this software, even if advised of the possibility of such damage.
 	 <xsl:value-of select="$result"/>
        </xsl:when>
        <xsl:otherwise>
-	 <xsl:sequence select="concat(normalize-space($letters),'&#10;')"/>
+	 <xsl:sequence select="concat(normalize-space(translate($letters,'ſ','s')),'&#10;')"/>
        </xsl:otherwise>
        </xsl:choose>
   </xsl:function>
@@ -197,7 +206,11 @@ of this software, even if advised of the possibility of such damage.
      <xsl:copy-of select="."/>
    </xsl:template>
    
-   <xsl:template match="lb|pb|gb" mode="preflight"/>
+   <xsl:template match="lb[@rend='hidden']" mode="preflight"/>
+
+   <xsl:template match="lb|pb|gb" mode="preflight">
+     <xsl:text> </xsl:text>
+   </xsl:template>
 
    <xsl:template match="*" mode="preflight">
      <xsl:copy>

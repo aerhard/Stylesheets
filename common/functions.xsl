@@ -325,6 +325,9 @@ of this software, even if advised of the possibility of such damage.
       <xsl:otherwise>
         <xsl:for-each select="$element">
           <xsl:choose>
+            <xsl:when test="parent::tei:div">false</xsl:when>
+            <xsl:when test="parent::tei:titlePage">false</xsl:when>
+            <xsl:when test="parent::tei:body">false</xsl:when>
             <xsl:when test="not(self::*)">true</xsl:when>
             <xsl:when test="parent::tei:bibl/parent::tei:q">true</xsl:when>
             <xsl:when test="tei:match(@rend,'inline') and not(tei:p or tei:l)">true</xsl:when>
@@ -334,14 +337,10 @@ of this software, even if advised of the possibility of such damage.
             <xsl:when test="tei:match(@rend,'display') or tei:match(@rend,'block')">false</xsl:when>
             <xsl:when test="@type='display' or @type='block'">false</xsl:when>
             <xsl:when test="tei:table or tei:figure or tei:list or tei:lg    or tei:q/tei:l or tei:l or tei:p or tei:biblStruct or tei:sp or tei:floatingText">false</xsl:when>
-            <xsl:when test="parent::tei:div">false</xsl:when>
-            <xsl:when test="parent::tei:titlePage">false</xsl:when>
             <xsl:when test="self::tei:cit[not(@rend)]">true</xsl:when>
             <xsl:when test="parent::tei:cit[tei:match(@rend,'display')]">false</xsl:when>
             <xsl:when test="parent::tei:cit and (tei:p or tei:l)">false</xsl:when>
-            <xsl:when test="parent::tei:body">false</xsl:when>
             <xsl:when test="parent::tei:cit and parent::cit/tei:bibl">false</xsl:when>
-            <xsl:when test="parent::tei:titlePage">false</xsl:when>
             <xsl:when test="self::tei:docAuthor and parent::tei:byline">true</xsl:when>
             <xsl:when test="self::tei:note[tei:cit/tei:bibl]">false</xsl:when>
             <xsl:when test="self::tei:note[parent::tei:biblStruct]">true</xsl:when>
@@ -383,6 +382,7 @@ of this software, even if advised of the possibility of such damage.
             <xsl:when test="self::tei:floatingText">false</xsl:when>
             <xsl:when test="self::tei:foreign">true</xsl:when>
             <xsl:when test="self::tei:forename">true</xsl:when>
+            <xsl:when test="self::tei:g">true</xsl:when>
             <xsl:when test="self::tei:gap">true</xsl:when>
             <xsl:when test="self::tei:genName">true</xsl:when>
             <xsl:when test="self::tei:geogName">true</xsl:when>
@@ -542,12 +542,12 @@ of this software, even if advised of the possibility of such damage.
   </xsl:template>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>[common] allow for further handling of text. By default,
-      just normalize, but some formats may escape some characters.</desc>
+      just convert long s to short s, but some formats may escape some characters.</desc>
   </doc>
   <xsl:function name="tei:escapeChars" as="xs:string">
     <xsl:param name="letters"/>
     <xsl:param name="context"/>
-    <xsl:value-of select="$letters"/>
+    <xsl:value-of select="translate($letters,'ſ','s')"/>
   </xsl:function>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>[common] process target urls, looking for magic patterns</desc>

@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<xsl:stylesheet 
-                xmlns:m="http://www.w3.org/1998/Math/MathML"
-                xmlns:tei="http://www.tei-c.org/ns/1.0"
+<xsl:stylesheet xmlns:tei="http://www.tei-c.org/ns/1.0"
+		xmlns:tite="http://www.tei-c.org/ns/tite/1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                exclude-result-prefixes="tei m"
+                exclude-result-prefixes="tei tite"
                 version="2.0">
-    <!-- import base conversion style -->
-
-    <xsl:import href="../../../latex/latex.xsl"/>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl" scope="stylesheet" type="stylesheet">
       <desc>
-
+         <p> TEI stylesheet dealing with elements from the core module. </p>
          <p>This software is dual-licensed:
 
 1. Distributed under a Creative Commons Attribution-ShareAlike 3.0
@@ -48,18 +44,13 @@ of this software, even if advised of the possibility of such damage.
          <p>Copyright: 2013, TEI Consortium</p>
       </desc>
    </doc>
+  <xsl:output indent="no"/>
 
 
-<xsl:template name="ledmacOptions">
-<xsl:message>SOAS Ledmac setup</xsl:message>
-\renewcommand{\notenumfont}{\bfseries}
-\lineation{page}
-\linenummargin{inner}
-\footthreecol{A}
-\foottwocol{B}
-\setromanfont{Linux Libertine O}
-\setsansfont{Myriad Pro}
-</xsl:template>
-
-    
+  <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
+      <desc>glyph element</desc>
+   </doc>
+  <xsl:template match="tei:g">
+    <xsl:apply-templates/>
+  </xsl:template>
 </xsl:stylesheet>

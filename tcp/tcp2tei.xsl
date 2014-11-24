@@ -96,7 +96,7 @@ of this software, even if advised of the possibility of such damage.
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>
       <p>text nodes are examined to find soft-hyphen characters,
-      which are replaced by explicit "lb".
+      which are replaced by Unicode character.
       </p>
     </desc>
   </doc>
@@ -106,24 +106,23 @@ of this software, even if advised of the possibility of such damage.
       <xsl:matching-substring>
         <xsl:value-of select="regex-group(1)"/>
         <xsl:if test="$parent='CELL'">-</xsl:if>
-        <lb>
-          <xsl:if test="not($parent='CELL')">
-            <xsl:attribute name="rend">hidden</xsl:attribute>
-            <xsl:attribute name="type">hyphenInWord</xsl:attribute>
-          </xsl:if>
-        </lb>
+	<xsl:text>&#x00AD;</xsl:text>
       </xsl:matching-substring>
       <xsl:non-matching-substring>
-        <xsl:value-of select="."/>
+	<xsl:value-of select="normalize-unicode(.,'NFC')"/>
       </xsl:non-matching-substring>
     </xsl:analyze-string>
   </xsl:template>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
-    <desc>TCP simple discard</desc>
+    <desc>TCP simple discard, you cant use hi in a description</desc>
   </doc>
   <xsl:template match="FIGDESC/HI">
     <xsl:apply-templates/>
   </xsl:template>
+  <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
+    <desc>discard temporary header material</desc>
+  </doc>
+  <xsl:template match="TEMPHEAD|IDG"/>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>TCP controversial discards</desc>
   </doc>
@@ -131,9 +130,7 @@ of this software, even if advised of the possibility of such damage.
   <xsl:template match="LABEL/@ROLE"/>
   <xsl:template match="TITLE/@TYPE"/>
   <xsl:template match="GROUP/@TYPE"/>
-  <xsl:template match="TEMPHEAD"/>
   <xsl:template match="TITLE/@I2"/>
-  <xsl:template match="IDG"/>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>multiple values for @lang are discarded</desc>
   </doc>
@@ -217,7 +214,16 @@ of this software, even if advised of the possibility of such damage.
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
-  <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
+    <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
+    <desc>
+      <p>A Q with just a Q inside it is redundant</p>
+    </desc>
+  </doc>
+  <xsl:template match="Q[not(text()) and count(*)=1]/Q">
+    <xsl:apply-templates/>
+  </xsl:template>
+  
+<doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>
       <p>A HEAD/@TYPE='sub' can lose itself if it consists of
       Q with L inside; though if thats all there is, it looks like
@@ -258,11 +264,11 @@ of this software, even if advised of the possibility of such damage.
   <xsl:template match="TITLESTMT/TITLE/text()[last()]">
     <xsl:choose>
       <xsl:when test="matches(.,':$')">
-        <xsl:value-of select="substring(.,1,string-length(.)-1)"/>
+	<xsl:value-of select="normalize-unicode(substring(.,1,string-length(.)-1),'NFC')"/>
       </xsl:when>
       <xsl:otherwise>
-        <xsl:value-of select="."/>
-      </xsl:otherwise>
+	<xsl:value-of select="normalize-unicode(.,'NFC')"/>
+       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
@@ -383,9 +389,10 @@ of this software, even if advised of the possibility of such damage.
         </xsl:choose>
       </xsl:variable>
       <xsl:variable name="hfile" select="concat($headerDirectory,$name,'.hdr')"/>
-      <xsl:message> attempt to load header <xsl:value-of select="$hfile"/></xsl:message>
       <xsl:choose>
+	<xsl:when test="TEIHEADER"/>
         <xsl:when test="doc-available($hfile)">
+	  <xsl:message> attempt to load header <xsl:value-of select="$hfile"/></xsl:message>
           <xsl:for-each select="doc($hfile)">
             <xsl:apply-templates select="*"/>
           </xsl:for-each>
@@ -743,6 +750,8 @@ of this software, even if advised of the possibility of such damage.
       <xsl:apply-templates/>
       <listPrefixDef>
         <prefixDef ident="tcp" matchPattern="([0-9\-]+):([0-9IVX]+)" replacementPattern="http://eebo.chadwyck.com/downloadtiff?vid=$1&amp;page=$2">
+	</prefixDef>
+        <prefixDef ident="char" matchPattern="(.+)" replacementPattern="https://raw.githubusercontent.com/textcreationpartnership/Texts/master/tcpchars.xml#$1">
 	</prefixDef>
       </listPrefixDef>
     </encodingDesc>
@@ -1225,12 +1234,6 @@ of this software, even if advised of the possibility of such damage.
       <xsl:apply-templates/>
     </teiFsd2>
   </xsl:template>
-  <xsl:template match="TEIHEADER">
-    <teiHeader>
-      <xsl:apply-templates select="@*"/>
-      <xsl:apply-templates/>
-    </teiHeader>
-  </xsl:template>
   <xsl:template match="TERMENTRY">
     <termEntry>
       <xsl:apply-templates select="@*"/>
@@ -1520,35 +1523,36 @@ of this software, even if advised of the possibility of such damage.
     </desc>
   </doc>
   <xsl:template match="@PLACE">
+    <xsl:variable name="p" select="lower-case(.)"/>
     <xsl:choose>
-      <xsl:when test=".='marg' or .='marg;' or .='marg)' or .='marg='         or .='ma / rg' or .='6marg'">
+      <xsl:when test="$p='marg' or $p='marg;' or $p='marg)' or $p='marg='         or $p='ma / rg' or $p='6marg'">
         <xsl:attribute name="place">margin</xsl:attribute>
       </xsl:when>
-      <xsl:when test=". = 'unspecified'"/>
-      <xsl:when test=".='foot;' or .='foor;' or .='foot'">
+      <xsl:when test="$p = 'unspecified'"/>
+      <xsl:when test="$p='foot;' or $p='foor;' or $p='foot'">
         <xsl:attribute name="place">bottom</xsl:attribute>
       </xsl:when>
-      <xsl:when test=".='foot1' or .='foot2'">
+      <xsl:when test="$p='foot1' or $p='foot2'">
         <xsl:attribute name="place">bottom</xsl:attribute>
-        <xsl:attribute name="type" select="."/>
+        <xsl:attribute name="type" select="$p"/>
       </xsl:when>
-      <xsl:when test=".='inter'">
-        <xsl:attribute name="rend" select="."/>
+      <xsl:when test="$p='inter'">
+        <xsl:attribute name="rend" select="$p"/>
       </xsl:when>
-      <xsl:when test=".='‡' or .='†' or .='‖' or .='6'  or .='“' or         .='1' or .='*'">
+      <xsl:when test="$p='‡' or $p='†' or $p='‖' or $p='6'  or $p='“' or         $p='1' or $p='*'">
         <xsl:attribute name="n">
-          <xsl:value-of select="."/>
+          <xsl:value-of select="$p"/>
         </xsl:attribute>
       </xsl:when>
       <xsl:otherwise>
         <xsl:attribute name="place">
-          <xsl:value-of select="."/>
+          <xsl:value-of select="$p"/>
         </xsl:attribute>
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
   <xsl:template match="@SAMPLE">
-    <xsl:if test="not(. = 'complete')">
+    <xsl:if test="not(. = 'COMPLETE')">
       <xsl:attribute name="sample">
         <xsl:value-of select="."/>
       </xsl:attribute>
@@ -2020,7 +2024,11 @@ of this software, even if advised of the possibility of such damage.
   <xsl:template match="SOURCEDESC/p[string-length(.)=0]"/>
   <xsl:template match="GAP/@DESC">
     <xsl:attribute name="reason">
-      <xsl:value-of select="."/>
+      <xsl:value-of select="lower-case(.)"/>
+      <xsl:if test="parent::GAP/@REASON">
+	<xsl:text>: </xsl:text>
+	<xsl:value-of select="parent::GAP/@REASON"/>
+      </xsl:if>
     </xsl:attribute>
   </xsl:template>
   <xsl:template match="GAP/@DISP">
@@ -2030,14 +2038,17 @@ of this software, even if advised of the possibility of such damage.
   </xsl:template>
   <xsl:template match="GAP">
     <gap>
-      <xsl:apply-templates select="@*"/>
+      <xsl:apply-templates select="@DESC"/>
+      <xsl:apply-templates select="@RESP"/>
+      <xsl:apply-templates select="@EXTENT"/>
+      <xsl:apply-templates select="@DISP"/>
     </gap>
   </xsl:template>
   <!--  creating a choice element -->
   <xsl:template match="CORR[@SIC]">
     <choice>
       <corr>
-        <xsl:value-of select="text()"/>
+        <xsl:apply-templates select="text()"/>
       </corr>
       <sic>
         <xsl:value-of select="@SIC"/>
@@ -2160,7 +2171,7 @@ of this software, even if advised of the possibility of such damage.
       <xsl:choose>
         <xsl:when test="RESP/NAME">
           <resp>
-            <xsl:value-of select="resp/text()"/>
+            <xsl:apply-templates select="resp/text()"/>
           </resp>
           <xsl:for-each select="RESP/NAME">
             <name>
@@ -2382,6 +2393,17 @@ of this software, even if advised of the possibility of such damage.
   <xsl:template match="tei:note[count(*)=1 and not(text())]/tei:p">
     <xsl:apply-templates select="*|processing-instruction()|comment()|text()" mode="pass2"/>
   </xsl:template>
+
+  <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
+    <desc>
+      <p>
+	A singleton floatingText inside a q can skip the q
+      </p>
+    </desc>
+  </doc>
+  <xsl:template match="tei:q[count(*)=1 and not(text()) and tei:floatingText]">
+    <xsl:apply-templates select="*|processing-instruction()|comment()|text()" mode="pass2"/>
+  </xsl:template>
   <doc xmlns="http://www.oxygenxml.com/ns/doc/xsl">
     <desc>
       <p>
@@ -2541,4 +2563,7 @@ of this software, even if advised of the possibility of such damage.
       </xsl:choose>
     </xsl:for-each-group>
   </xsl:template>
+
+
+
 </xsl:stylesheet>
